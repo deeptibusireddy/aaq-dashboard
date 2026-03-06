@@ -54,12 +54,59 @@ export interface IncidentRow {
 // ── Actionable Insights ─────────────────────────────────────────────────────
 export type PersonaTag = 'Content Manager' | 'Support Engineer' | 'LOB Leader' | 'Program Leader';
 export type Priority = 'High' | 'Medium' | 'Low';
+export type ResolutionType = 'content-fix' | 'ado-assignment' | 'bug-filing';
+
+export interface FailingPrompt {
+  question: string;
+  botAnswer: string;
+  missingContent: string;
+}
+
+export interface ArticleItem {
+  title: string;
+  lob: string;
+  status: 'Blocked' | 'Outdated' | 'Missing';
+  age: string;
+}
+
+export interface AdoFormData {
+  title: string;
+  type: 'Bug' | 'Task' | 'User Story';
+  assignedTo: string;
+  areaPath: string;
+  priority: '1' | '2' | '3' | '4';
+  tags: string;
+}
+
+export interface BugFormData {
+  title: string;
+  severity: 'Critical' | 'High' | 'Medium' | 'Low';
+  component: string;
+  team: 'PG' | 'SIA Eng' | 'DS';
+  description: string;
+}
+
+export interface ActionDetail {
+  summary: string;
+  // content-fix
+  failingPrompts?: FailingPrompt[];
+  articles?: ArticleItem[];
+  // ado-assignment
+  adoDefaults?: Partial<AdoFormData>;
+  affectedQueries?: string[];
+  // bug-filing
+  bugDefaults?: Partial<BugFormData>;
+  investigationContext?: string;
+  incidentId?: string;
+}
 
 export interface ActionItem {
   id: string;
   priority: Priority;
   persona: PersonaTag;
   description: string;
-  section?: string;  // anchor to scroll to
+  section?: string;
+  resolutionType: ResolutionType;
+  detail: ActionDetail;
 }
 

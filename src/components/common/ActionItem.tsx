@@ -15,19 +15,32 @@ const PERSONA_INITIALS: Record<string, string> = {
   'Program Leader': 'PL',
 };
 
+const RESOLUTION_LABEL: Record<string, string> = {
+  'content-fix': '📄 Fix Content',
+  'ado-assignment': '🔗 Create ADO',
+  'bug-filing': '🐛 File Bug / DS',
+};
+
 interface Props {
   item: ActionItemType;
+  onClick: (item: ActionItemType) => void;
 }
 
-export function ActionItem({ item }: Props) {
-  const { priority, persona, description } = item;
+export function ActionItem({ item, onClick }: Props) {
+  const { priority, persona, description, resolutionType } = item;
 
   const priorityDot = priority === 'High' ? '🔴' : priority === 'Medium' ? '🟡' : '🟢';
   const personaColor = PERSONA_COLORS[persona] ?? '#888';
   const personaInitials = PERSONA_INITIALS[persona] ?? '??';
 
   return (
-    <div className={`action-item action-item--${priority.toLowerCase()}`}>
+    <div
+      className={`action-item action-item--${priority.toLowerCase()} action-item--clickable`}
+      onClick={() => onClick(item)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => e.key === 'Enter' && onClick(item)}
+    >
       <div className="action-item__header">
         <span className="action-item__priority">{priorityDot} {priority}</span>
         <span
@@ -38,6 +51,7 @@ export function ActionItem({ item }: Props) {
         </span>
       </div>
       <p className="action-item__desc">{description}</p>
+      <span className="action-item__resolve-hint">{RESOLUTION_LABEL[resolutionType]} →</span>
     </div>
   );
 }

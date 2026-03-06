@@ -7,6 +7,34 @@ export const actionItems: ActionItem[] = [
     persona: 'Content Manager',
     description: '14 Azure LOB articles blocked due to missing metadata tags — assign to content owner and remediate.',
     section: 'content-health',
+    resolutionType: 'content-fix',
+    detail: {
+      summary: '14 articles in the Azure LOB are blocking search retrieval because required metadata tags are absent. Users asking Azure billing and IAM questions are getting empty results.',
+      failingPrompts: [
+        {
+          question: 'How do I set up role-based access control in Azure?',
+          botAnswer: 'I could not find relevant documentation for this topic.',
+          missingContent: 'Article "Azure RBAC Configuration Guide" is blocked — missing LOB and product tags.',
+        },
+        {
+          question: 'What are my Azure subscription spending limits?',
+          botAnswer: 'No results found. Please contact your administrator.',
+          missingContent: 'Article "Azure Cost Management & Billing" is blocked — missing cost-center and tier metadata.',
+        },
+        {
+          question: 'How do I assign a managed identity to a VM?',
+          botAnswer: 'I was unable to retrieve documentation for this query.',
+          missingContent: 'Article "Managed Identity Setup" is blocked — missing azure-compute tag.',
+        },
+      ],
+      articles: [
+        { title: 'Azure RBAC Configuration Guide', lob: 'Azure', status: 'Blocked', age: '12 days' },
+        { title: 'Azure Cost Management & Billing', lob: 'Azure', status: 'Blocked', age: '8 days' },
+        { title: 'Managed Identity Setup', lob: 'Azure', status: 'Blocked', age: '15 days' },
+        { title: 'Azure Policy Definitions', lob: 'Azure', status: 'Blocked', age: '6 days' },
+        { title: 'Virtual Network Peering', lob: 'Azure', status: 'Outdated', age: '31 days' },
+      ],
+    },
   },
   {
     id: 'a2',
@@ -14,6 +42,24 @@ export const actionItems: ActionItem[] = [
     persona: 'Support Engineer',
     description: 'Empty results for "SLA policy" queries spiked 18% this week — retest key prompts and flag gaps.',
     section: 'support-quality',
+    resolutionType: 'ado-assignment',
+    detail: {
+      summary: 'SLA policy queries are returning empty results 18% more often than last week. This affects Azure and M365 LOBs most. A content or retrieval gap needs investigation by the LOB content lead.',
+      affectedQueries: [
+        'What is the SLA for Azure VM uptime?',
+        'How do I file an SLA violation claim?',
+        'What is the support SLA for P1 incidents?',
+        'Does Microsoft 365 have a 99.9% SLA guarantee?',
+      ],
+      adoDefaults: {
+        title: 'SLA Policy Query Gap — Empty Results Spike 18%',
+        type: 'Task',
+        assignedTo: 'Azure LOB Lead',
+        areaPath: 'AAQ\\Content\\Azure',
+        priority: '2',
+        tags: 'content-gap, sla, azure, m365',
+      },
+    },
   },
   {
     id: 'a3',
@@ -21,6 +67,19 @@ export const actionItems: ActionItem[] = [
     persona: 'Program Leader',
     description: 'INC-2041: Azure ingestion pipeline failure is unresolved — escalate to engineering for root cause.',
     section: 'program-health',
+    resolutionType: 'bug-filing',
+    detail: {
+      summary: 'The Azure content ingestion pipeline has been failing since March 2nd. 847 articles have not been refreshed. This is causing stale content to be served to users and increasing empty result rates.',
+      incidentId: 'INC-2041',
+      investigationContext: 'Pipeline last succeeded: Mar 2, 2026 02:14 UTC. Error: "Index write timeout after 30s". Affects: Azure LOB content refresh. 847 articles stale. Retry attempts: 6 (all failed).',
+      bugDefaults: {
+        title: 'INC-2041: Azure ingestion pipeline write timeout — 847 articles stale',
+        severity: 'Critical',
+        component: 'Content Ingestion Pipeline',
+        team: 'PG',
+        description: 'Azure content ingestion pipeline has been failing since Mar 2 with index write timeouts. 847 articles are stale. Need root cause analysis and fix. Incident INC-2041.',
+      },
+    },
   },
   {
     id: 'a4',
@@ -28,6 +87,24 @@ export const actionItems: ActionItem[] = [
     persona: 'LOB Leader',
     description: 'Windows LOB HRR dropped 4% over last 30 days — investigate content gaps in Windows update articles.',
     section: 'business-outcomes',
+    resolutionType: 'ado-assignment',
+    detail: {
+      summary: 'Human Resolution Rate for Windows LOB dropped from 74% to 70% over 30 days. Correlation with low-scoring queries around Windows Update and driver issues suggests a content gap rather than a model problem.',
+      affectedQueries: [
+        'How do I roll back a Windows Update?',
+        'Windows 11 driver compatibility issues after update',
+        'How to defer feature updates in Windows 365',
+        'BitLocker recovery key after Windows Update',
+      ],
+      adoDefaults: {
+        title: 'Windows LOB HRR Drop — Content Gap Investigation',
+        type: 'User Story',
+        assignedTo: 'Windows LOB Lead',
+        areaPath: 'AAQ\\LOB\\Windows',
+        priority: '2',
+        tags: 'hrr, windows, content-gap, update-articles',
+      },
+    },
   },
   {
     id: 'a5',
@@ -35,6 +112,29 @@ export const actionItems: ActionItem[] = [
     persona: 'Content Manager',
     description: 'Metadata coverage below 70% for Intune and Azure LOBs — run bulk tag update to restore searchability.',
     section: 'content-health',
+    resolutionType: 'content-fix',
+    detail: {
+      summary: 'Intune and Azure LOB metadata coverage has fallen below the 70% threshold required for reliable retrieval. Bulk tag remediation or file re-upload is needed for 23 articles.',
+      failingPrompts: [
+        {
+          question: 'How do I enroll a device in Intune?',
+          botAnswer: 'I found limited results. Please browse the knowledge base directly.',
+          missingContent: 'Article "Intune Device Enrollment Guide" is missing product and platform metadata.',
+        },
+        {
+          question: 'What Intune policies apply to BYOD devices?',
+          botAnswer: 'No documentation matched your query.',
+          missingContent: 'Article "BYOD Compliance Policies" has no LOB or compliance tags.',
+        },
+      ],
+      articles: [
+        { title: 'Intune Device Enrollment Guide', lob: 'Intune', status: 'Blocked', age: '5 days' },
+        { title: 'BYOD Compliance Policies', lob: 'Intune', status: 'Blocked', age: '9 days' },
+        { title: 'Conditional Access with Intune', lob: 'Intune', status: 'Outdated', age: '22 days' },
+        { title: 'Azure AD Group Policy Migration', lob: 'Azure', status: 'Blocked', age: '4 days' },
+        { title: 'Azure Resource Tagging Standards', lob: 'Azure', status: 'Missing', age: 'N/A' },
+      ],
+    },
   },
   {
     id: 'a6',
@@ -42,6 +142,25 @@ export const actionItems: ActionItem[] = [
     persona: 'Support Engineer',
     description: 'Feedback score for Azure LOB dropped to 62% — coordinate retest session on top 10 Azure prompts.',
     section: 'support-quality',
+    resolutionType: 'ado-assignment',
+    detail: {
+      summary: 'User thumbs-up feedback for Azure LOB answers has dropped to 62% (down from 71% last month). The top 10 low-scoring prompts need a structured retest session with the Azure content team.',
+      affectedQueries: [
+        'How do I configure Azure Firewall rules?',
+        'Azure Active Directory B2C setup guide',
+        'How do I migrate an on-prem VM to Azure?',
+        'Azure Kubernetes Service networking FAQ',
+        'How do I set Azure resource locks?',
+      ],
+      adoDefaults: {
+        title: 'Azure LOB Feedback Score Drop — Retest Top 10 Prompts',
+        type: 'Task',
+        assignedTo: 'Azure Content Owner',
+        areaPath: 'AAQ\\Quality\\Azure',
+        priority: '3',
+        tags: 'feedback, azure, retest, quality',
+      },
+    },
   },
   {
     id: 'a7',
@@ -49,6 +168,18 @@ export const actionItems: ActionItem[] = [
     persona: 'Program Leader',
     description: 'Retrieval success has declined for 2 consecutive months — add to next shiproom agenda.',
     section: 'program-health',
+    resolutionType: 'bug-filing',
+    detail: {
+      summary: 'Retrieval success rate has declined from 91% to 84% over two months across all LOBs. This trend suggests a systemic issue — either index degradation, embedding drift, or a recent model change. Needs DS investigation.',
+      investigationContext: 'Retrieval success: Jan 91% → Feb 88% → Mar 84%. Affects all LOBs proportionally. Chunking strategy unchanged. Index rebuilt Feb 15 — decline continued post-rebuild. Hypothesis: embedding model drift or threshold mismatch.',
+      bugDefaults: {
+        title: 'Retrieval success declining 2 months — systemic investigation needed',
+        severity: 'High',
+        component: 'Retrieval / Embedding',
+        team: 'DS',
+        description: 'Retrieval success has dropped from 91% to 84% over 2 months across all LOBs. Needs DS investigation into embedding drift, index quality, or similarity threshold changes.',
+      },
+    },
   },
   {
     id: 'a8',
@@ -56,6 +187,23 @@ export const actionItems: ActionItem[] = [
     persona: 'LOB Leader',
     description: '3 open incidents are older than 7 days — review status with owning LOB leads and close or escalate.',
     section: 'program-health',
+    resolutionType: 'ado-assignment',
+    detail: {
+      summary: 'Three incidents (INC-2038, INC-2039, INC-2040) have been open for over 7 days without a status update. LOB leads need to either resolve and close them or escalate with a new severity assessment.',
+      affectedQueries: [
+        'INC-2038: M365 search latency > 4s (open 9 days) — Owner: M365 LOB Lead',
+        'INC-2039: Xbox article rendering broken in portal (open 8 days) — Owner: Xbox LOB Lead',
+        'INC-2040: Dynamics CRM retrieval returning duplicates (open 7 days) — Owner: Dynamics LOB Lead',
+      ],
+      adoDefaults: {
+        title: 'Stale Incident Review — INC-2038, INC-2039, INC-2040',
+        type: 'Task',
+        assignedTo: 'LOB Leads (M365, Xbox, Dynamics)',
+        areaPath: 'AAQ\\Operations\\Incidents',
+        priority: '3',
+        tags: 'incidents, stale, review, lob-leads',
+      },
+    },
   },
   {
     id: 'a9',
@@ -63,5 +211,19 @@ export const actionItems: ActionItem[] = [
     persona: 'Content Manager',
     description: 'Xbox article "Ban Appeal Process" is 45 days old and blocked — determine if content should be archived.',
     section: 'content-health',
+    resolutionType: 'content-fix',
+    detail: {
+      summary: 'The Xbox "Ban Appeal Process" article has been blocked for 45 days and has not been updated. It may contain outdated policy information. A decision is needed: update the content, upload a replacement, or archive it.',
+      failingPrompts: [
+        {
+          question: 'How do I appeal an Xbox account ban?',
+          botAnswer: 'I was unable to retrieve current policy information for this topic.',
+          missingContent: 'Article "Ban Appeal Process" is blocked and 45 days stale — policy may have changed.',
+        },
+      ],
+      articles: [
+        { title: 'Ban Appeal Process', lob: 'Xbox', status: 'Blocked', age: '45 days' },
+      ],
+    },
   },
 ];
