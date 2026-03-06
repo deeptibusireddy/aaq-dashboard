@@ -67,6 +67,8 @@ export interface ArticleItem {
   lob: string;
   status: 'Blocked' | 'Outdated' | 'Missing';
   age: string;
+  blockedReason?: string;
+  articleUrl?: string;
 }
 
 export interface AdoFormData {

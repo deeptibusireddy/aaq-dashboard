@@ -23,16 +23,6 @@ const rand = (min: number, max: number) =>
 
 // ── Types for sub-component props ────────────────────────────────────────────
 
-interface ContentFixProps {
-  item: ActionItem;
-  showFileInput: boolean;
-  setShowFileInput: (v: boolean) => void;
-  uploadSuccess: boolean;
-  setUploadSuccess: (v: boolean) => void;
-  showArchiveConfirm: boolean;
-  setShowArchiveConfirm: (v: boolean) => void;
-}
-
 interface AdoFlowProps {
   item: ActionItem;
   adoForm: AdoFormData;
@@ -68,11 +58,6 @@ interface Props {
 }
 
 export function ResolutionDrawer({ item, onClose }: Props) {
-  // content-fix state
-  const [showFileInput, setShowFileInput]         = useState(false);
-  const [uploadSuccess, setUploadSuccess]         = useState(false);
-  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
-
   // ado-assignment state
   const [adoForm, setAdoForm] = useState<AdoFormData>({
     title: '', type: 'Bug', assignedTo: '', areaPath: '', priority: '2', tags: '',
@@ -96,10 +81,6 @@ export function ResolutionDrawer({ item, onClose }: Props) {
   // Reset all state when the active item changes
   useEffect(() => {
     if (!item) return;
-
-    setShowFileInput(false);
-    setUploadSuccess(false);
-    setShowArchiveConfirm(false);
     setAdoSuccess(false);
     setAdoId('');
     setBugTab('file-bug');
@@ -172,15 +153,7 @@ export function ResolutionDrawer({ item, onClose }: Props) {
         {/* Flow body */}
         <div className="rd-body">
           {item.resolutionType === 'content-fix' && (
-            <ContentFixFlow
-              item={item}
-              showFileInput={showFileInput}
-              setShowFileInput={setShowFileInput}
-              uploadSuccess={uploadSuccess}
-              setUploadSuccess={setUploadSuccess}
-              showArchiveConfirm={showArchiveConfirm}
-              setShowArchiveConfirm={setShowArchiveConfirm}
-            />
+            <ContentFixFlow key={item.id} item={item} />
           )}
 
           {item.resolutionType === 'ado-assignment' && (
@@ -228,19 +201,48 @@ export function ResolutionDrawer({ item, onClose }: Props) {
 
 // ── Flow 1: content-fix ──────────────────────────────────────────────────────
 
-function ContentFixFlow({
-  item,
-  showFileInput,
-  setShowFileInput,
-  uploadSuccess,
-  setUploadSuccess,
-  showArchiveConfirm,
-  setShowArchiveConfirm,
-}: ContentFixProps) {
+type ArticleAction = { type: string; date: string; by: string };
+
+function ContentFixFlow({ item }: { item: ActionItem }) {
   const { detail } = item;
+  const articles = detail.articles ?? [];
+
+  const [selected, setSelected]           = useState<Set<number>>(new Set());
+  const [actions, setActions]             = useState<Record<number, ArticleAction>>({});
+  const [blockedPopupIdx, setBlockedPopupIdx] = useState<number | null>(null);
+  const [actionDetailIdx, setActionDetailIdx] = useState<number | null>(null);
+  const [showAdoForm, setShowAdoForm]     = useState(false);
+  const [adoTitle, setAdoTitle]           = useState('');
+  const [adoAssignee, setAdoAssignee]     = useState('Azure LOB Lead');
+  const [adoSuccess, setAdoSuccess]       = useState(false);
+  const [adoId, setAdoId]                 = useState('');
+
+  const allSelected = selected.size === articles.length && articles.length > 0;
+  const noneSelected = selected.size === 0;
+
+  const toggleAll = () => allSelected ? setSelected(new Set()) : setSelected(new Set(articles.map((_, i) => i)));
+  const toggleOne = (i: number) => {
+    const next = new Set(selected);
+    next.has(i) ? next.delete(i) : next.add(i);
+    setSelected(next);
+  };
+
+  const takeAction = (type: string) => {
+    const now = new Date();
+    const stamp = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      + ' · ' + now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const entry: ArticleAction = { type, date: stamp, by: 'You' };
+    setActions(prev => {
+      const next = { ...prev };
+      selected.forEach(i => { next[i] = entry; });
+      return next;
+    });
+    setSelected(new Set());
+  };
 
   return (
     <div>
+      {/* Failing Prompts */}
       <section className="rd-section">
         <h3 className="rd-section-title">Failing Prompts</h3>
         {detail.failingPrompts?.map((p, i) => (
@@ -258,78 +260,131 @@ function ContentFixFlow({
         ))}
       </section>
 
+      {/* Affected Articles */}
       <section className="rd-section">
-        <h3 className="rd-section-title">Affected Articles</h3>
+        <h3 className="rd-section-title">
+          Affected Articles
+          {selected.size > 0 && <span className="rd-selected-count">{selected.size} selected</span>}
+        </h3>
 
-        {detail.articles && detail.articles.length > 0 && (
-          <table className="rd-table">
-            <thead>
-              <tr>
-                <th>Article</th>
-                <th>LOB</th>
-                <th>Status</th>
-                <th>Age</th>
+        <table className="rd-table rd-table--checkable">
+          <thead>
+            <tr>
+              <th><input type="checkbox" checked={allSelected} onChange={toggleAll} /></th>
+              <th>Article</th>
+              <th>LOB</th>
+              <th>Status</th>
+              <th>Age</th>
+              <th>Action Taken</th>
+            </tr>
+          </thead>
+          <tbody>
+            {articles.map((a, i) => (
+              <tr key={i} className={selected.has(i) ? 'rd-row--selected' : ''}>
+                <td><input type="checkbox" checked={selected.has(i)} onChange={() => toggleOne(i)} /></td>
+                <td>
+                  <a
+                    href={a.articleUrl ?? 'https://aka.ms/KABugReport'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rd-article-link"
+                  >
+                    {a.title} ↗
+                  </a>
+                </td>
+                <td>{a.lob}</td>
+                <td>
+                  {a.status === 'Blocked' && a.blockedReason ? (
+                    <button
+                      className="rd-status-badge rd-status-badge--blocked rd-status-badge--clickable"
+                      onClick={() => setBlockedPopupIdx(blockedPopupIdx === i ? null : i)}
+                    >
+                      🔒 Blocked ▾
+                    </button>
+                  ) : (
+                    <span className={`rd-status-badge rd-status-badge--${a.status.toLowerCase()}`}>{a.status}</span>
+                  )}
+                  {blockedPopupIdx === i && a.blockedReason && (
+                    <div className="rd-blocked-popup">
+                      <div className="rd-blocked-popup__header">
+                        <strong>Why blocked?</strong>
+                        <button onClick={() => setBlockedPopupIdx(null)}>✕</button>
+                      </div>
+                      <p>{a.blockedReason}</p>
+                    </div>
+                  )}
+                </td>
+                <td>{a.age}</td>
+                <td>
+                  {actions[i] ? (
+                    <button
+                      className="rd-action-taken-badge"
+                      onClick={() => setActionDetailIdx(actionDetailIdx === i ? null : i)}
+                    >
+                      ✓ {actions[i].type} ▾
+                    </button>
+                  ) : (
+                    <span className="rd-muted-sm">—</span>
+                  )}
+                  {actionDetailIdx === i && actions[i] && (
+                    <div className="rd-blocked-popup">
+                      <div className="rd-blocked-popup__header">
+                        <strong>Action detail</strong>
+                        <button onClick={() => setActionDetailIdx(null)}>✕</button>
+                      </div>
+                      <p><strong>Action:</strong> {actions[i].type}</p>
+                      <p><strong>By:</strong> {actions[i].by}</p>
+                      <p><strong>When:</strong> {actions[i].date}</p>
+                    </div>
+                  )}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {detail.articles.map((a, i) => (
-                <tr key={i}>
-                  <td>{a.title}</td>
-                  <td>{a.lob}</td>
-                  <td>
-                    <span className={`rd-status-badge rd-status-badge--${a.status.toLowerCase()}`}>
-                      {a.status}
-                    </span>
-                  </td>
-                  <td>{a.age}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            ))}
+          </tbody>
+        </table>
 
-        <div className="rd-action-row">
-          {uploadSuccess ? (
-            <div className="rd-success-msg">✓ Content uploaded and queued for indexing</div>
-          ) : (
-            <>
-              <button className="rd-btn rd-btn--primary" onClick={() => setShowFileInput(true)}>
-                📤 Upload Content
-              </button>
-              <button className="rd-btn rd-btn--secondary">✏️ Edit Article</button>
-              <button className="rd-btn rd-btn--ghost-danger" onClick={() => setShowArchiveConfirm(true)}>
-                🗄 Archive
-              </button>
-            </>
-          )}
+        {/* Bulk action buttons */}
+        <div className="rd-action-row rd-action-row--wrap" style={{ marginTop: 14 }}>
+          <button className="rd-btn rd-btn--primary"   disabled={noneSelected} onClick={() => takeAction('Unblocked')}>🔓 Unblock</button>
+          <a href="https://aka.ms/KABugReport" target="_blank" rel="noopener noreferrer"
+            className={`rd-btn rd-btn--secondary${noneSelected ? ' rd-btn--disabled' : ''}`}
+            onClick={e => { if (noneSelected) e.preventDefault(); else takeAction('Content Removed'); }}
+          >🗑 Remove Content</a>
+          <a href="https://aka.ms/KABugReport" target="_blank" rel="noopener noreferrer"
+            className={`rd-btn rd-btn--secondary${noneSelected ? ' rd-btn--disabled' : ''}`}
+            onClick={e => { if (noneSelected) e.preventDefault(); else takeAction('Content Added'); }}
+          >➕ Add Content</a>
+          <button className="rd-btn rd-btn--secondary"  disabled={noneSelected} onClick={() => { setShowAdoForm(true); takeAction('Content Update Requested'); }}>✏️ Request Content Update</button>
+          <button className="rd-btn rd-btn--ghost-danger" disabled={noneSelected} onClick={() => takeAction('Archived')}>🗄 Archive</button>
         </div>
 
-        {showFileInput && !uploadSuccess && (
-          <div className="rd-file-area">
-            <label className="rd-file-label">
-              <input type="file" className="rd-file-input" />
-              <span>Click to select a file or drag and drop</span>
+        {/* ADO content update form */}
+        {showAdoForm && !adoSuccess && (
+          <div className="rd-inline-form" style={{ marginTop: 14 }}>
+            <h4 className="rd-inline-form__title">📋 Content Update Request (ADO)</h4>
+            <label className="rd-form-label">Title
+              <input className="rd-form-input" value={adoTitle} onChange={e => setAdoTitle(e.target.value)} />
             </label>
-            <button
-              className="rd-btn rd-btn--primary"
-              onClick={() => { setUploadSuccess(true); setShowFileInput(false); }}
-            >
-              Confirm Upload
-            </button>
+            <label className="rd-form-label">Assign to
+              <input className="rd-form-input" value={adoAssignee} onChange={e => setAdoAssignee(e.target.value)} />
+            </label>
+            <div className="rd-action-row">
+              <button className="rd-btn rd-btn--primary" onClick={() => { setAdoId(`AB#${rand(14000,15999)}`); setAdoSuccess(true); }}>
+                🔗 Create ADO Item
+              </button>
+              <button className="rd-btn rd-btn--secondary" onClick={() => setShowAdoForm(false)}>Cancel</button>
+            </div>
           </div>
         )}
-
-        {showArchiveConfirm && (
-          <div className="rd-confirm-box">
-            <p>Are you sure you want to archive this article?</p>
-            <div className="rd-confirm-box__actions">
-              <button className="rd-btn rd-btn--ghost-danger" onClick={() => setShowArchiveConfirm(false)}>
-                Confirm Archive
-              </button>
-              <button className="rd-btn rd-btn--secondary" onClick={() => setShowArchiveConfirm(false)}>
-                Cancel
-              </button>
+        {adoSuccess && (
+          <div className="rd-ado-card" style={{ marginTop: 14 }}>
+            <div className="rd-ado-card__id">{adoId}</div>
+            <div className="rd-ado-card__title">{adoTitle || 'Content Update Request'}</div>
+            <div className="rd-ado-card__meta">
+              <span>Assigned to: <strong>{adoAssignee}</strong></span>
+              <span>Type: <strong>Task</strong></span>
             </div>
+            <a href="#" className="rd-ado-link">View in ADO →</a>
           </div>
         )}
       </section>
