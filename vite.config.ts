@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
+// Base path: '/' for Azure Static Web Apps / local dev
+// Change to '/aaq-dashboard/' if re-deploying to GitHub Pages
 export default defineConfig({
   plugins: [react()],
-  base: '/aaq-dashboard/',
+  base: '/',
 })
