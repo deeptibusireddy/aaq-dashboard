@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import './ResolutionDrawer.css';
-import type { ActionItem, AdoFormData, BugFormData } from '../../types';
+import type { ActionItem, AdoFormData, BugFormData, MissingQuery } from '../../types';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -192,6 +192,10 @@ export function ResolutionDrawer({ item, onClose }: Props) {
                 setDsSuccess(true);
               }}
             />
+          )}
+
+          {item.resolutionType === 'content-request' && (
+            <ContentRequestFlow key={item.id} item={item} />
           )}
         </div>
       </aside>
@@ -657,6 +661,218 @@ function BugFilingFlow({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Flow 4: content-request ──────────────────────────────────────────────────
+
+function ContentRequestFlow({ item }: { item: ActionItem }) {
+  const { detail } = item;
+  const queries: MissingQuery[] = detail.missingQueries ?? [];
+
+  const [tab, setTab]                   = useState<'add-content' | 'assign-ado'>('add-content');
+  const [selectedQuery, setSelectedQuery] = useState<number | null>(null);
+
+  // add-content form
+  const [contentTitle, setContentTitle]   = useState('');
+  const [contentLob, setContentLob]       = useState(detail.contentRequestDefaults?.areaPath?.split('\\')[2] ?? '');
+  const [contentTopic, setContentTopic]   = useState('');
+  const [contentDesc, setContentDesc]     = useState('');
+  const [contentUrl, setContentUrl]       = useState('');
+  const [addSuccess, setAddSuccess]       = useState(false);
+  const [addAdoId, setAddAdoId]           = useState('');
+
+  // assign-ado form
+  const [adoTitle, setAdoTitle]           = useState('');
+  const [adoAssignee, setAdoAssignee]     = useState(detail.contentRequestDefaults?.assignedTo ?? 'LOB Content Lead');
+  const [adoAreaPath, setAdoAreaPath]     = useState(detail.contentRequestDefaults?.areaPath ?? '');
+  const [adoPriority, setAdoPriority]     = useState<'1'|'2'|'3'|'4'>('2');
+  const [adoTags, setAdoTags]             = useState(detail.contentRequestDefaults?.tags ?? '');
+  const [adoSuccess, setAdoSuccess]       = useState(false);
+  const [adoId, setAdoId]                 = useState('');
+
+  // pre-fill forms when user clicks a query
+  const selectQuery = (i: number) => {
+    const q = queries[i];
+    setSelectedQuery(i === selectedQuery ? null : i);
+    if (i !== selectedQuery) {
+      setContentTitle(`Add content: ${q.topic} (${q.lob})`);
+      setContentLob(q.lob);
+      setContentTopic(q.topic);
+      setAdoTitle(`[Content Gap] ${q.lob} – ${q.topic}: no knowledge for "${q.question.slice(0, 60)}..."`);
+    }
+  };
+
+  const lobColor: Record<string, string> = {
+    Azure: '#0078d4', M365: '#217346', Intune: '#ca5010',
+    Xbox: '#107c10', Windows: '#8764b8', Dynamics: '#d83b01',
+  };
+
+  return (
+    <div>
+      {/* Missing queries table */}
+      <section className="rd-section">
+        <h3 className="rd-section-title">Unanswered Queries <span className="rd-selected-count">{queries.length} gaps</span></h3>
+        <p className="rd-muted-sm" style={{ marginBottom: 10 }}>Click a row to pre-fill the resolution form below.</p>
+        <table className="rd-table rd-table--checkable">
+          <thead>
+            <tr>
+              <th>Question</th>
+              <th>LOB</th>
+              <th>Topic</th>
+              <th style={{ textAlign: 'right' }}># Asked</th>
+            </tr>
+          </thead>
+          <tbody>
+            {queries.map((q, i) => (
+              <tr
+                key={i}
+                className={`rd-table-row--clickable${selectedQuery === i ? ' rd-row--selected' : ''}`}
+                onClick={() => selectQuery(i)}
+                title="Click to pre-fill the form below"
+              >
+                <td>{q.question}</td>
+                <td>
+                  <span
+                    className="rd-lob-chip"
+                    style={{ background: (lobColor[q.lob] ?? '#888') + '18', color: lobColor[q.lob] ?? '#888' }}
+                  >
+                    {q.lob}
+                  </span>
+                </td>
+                <td>{q.topic}</td>
+                <td style={{ textAlign: 'right', fontWeight: 600 }}>{q.frequency}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      {/* Action tabs */}
+      <section className="rd-section">
+        <div className="rd-tabs">
+          <button
+            className={`rd-tab ${tab === 'add-content' ? 'rd-tab--active' : ''}`}
+            onClick={() => setTab('add-content')}
+          >
+            ➕ Add Content
+          </button>
+          <button
+            className={`rd-tab ${tab === 'assign-ado' ? 'rd-tab--active' : ''}`}
+            onClick={() => setTab('assign-ado')}
+          >
+            📋 Assign to Investigate
+          </button>
+        </div>
+
+        {/* Tab: Add Content */}
+        {tab === 'add-content' && (
+          <div className="rd-tab-panel">
+            {addSuccess ? (
+              <div className="rd-success-msg">
+                ✓ Content addition request {addAdoId} created. LOB lead notified to review and publish.
+              </div>
+            ) : (
+              <>
+                <p className="rd-muted-sm" style={{ marginBottom: 12 }}>
+                  Describe the missing content and optionally provide a source URL or document. This creates an ADO User Story for the content team to author and publish.
+                </p>
+                <form className="rd-form" onSubmit={(e) => { e.preventDefault(); setAddAdoId(`AB#${rand(14000, 15999)}`); setAddSuccess(true); }}>
+                  <div className="rd-form-field">
+                    <label>Content Title</label>
+                    <input type="text" value={contentTitle} onChange={e => setContentTitle(e.target.value)} placeholder="e.g. Azure Private Endpoint setup guide" />
+                  </div>
+                  <div className="rd-form-row">
+                    <div className="rd-form-field">
+                      <label>LOB</label>
+                      <input type="text" value={contentLob} onChange={e => setContentLob(e.target.value)} placeholder="e.g. Azure" />
+                    </div>
+                    <div className="rd-form-field">
+                      <label>Topic</label>
+                      <input type="text" value={contentTopic} onChange={e => setContentTopic(e.target.value)} placeholder="e.g. Networking" />
+                    </div>
+                  </div>
+                  <div className="rd-form-field">
+                    <label>Description of needed content</label>
+                    <textarea rows={3} value={contentDesc} onChange={e => setContentDesc(e.target.value)} placeholder="What should this content cover? Include any known source materials or SMEs." />
+                  </div>
+                  <div className="rd-form-field">
+                    <label>Source URL <span className="rd-muted-sm">(optional)</span></label>
+                    <input type="url" value={contentUrl} onChange={e => setContentUrl(e.target.value)} placeholder="https://learn.microsoft.com/..." />
+                  </div>
+                  <div className="rd-form-field">
+                    <label>Upload document <span className="rd-muted-sm">(optional)</span></label>
+                    <div className="rd-upload-zone">
+                      <span>📄 Drag a file here or <strong>browse</strong></span>
+                      <span className="rd-muted-sm">.docx, .pdf, .md supported</span>
+                    </div>
+                  </div>
+                  <button type="submit" className="rd-btn rd-btn--primary rd-btn--full">
+                    ➕ Submit Content Request
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Assign to Investigate */}
+        {tab === 'assign-ado' && (
+          <div className="rd-tab-panel">
+            {adoSuccess ? (
+              <div className="rd-ado-card">
+                <div className="rd-ado-card__id">{adoId}</div>
+                <div className="rd-ado-card__title">{adoTitle || 'Content Gap Investigation'}</div>
+                <div className="rd-ado-card__meta">
+                  <span>Assigned to: <strong>{adoAssignee}</strong></span>
+                  <span>Type: <strong>User Story</strong></span>
+                  <span>Priority: <strong>{adoPriority}</strong></span>
+                </div>
+                <a href="#" className="rd-ado-link">View in ADO →</a>
+              </div>
+            ) : (
+              <>
+                <p className="rd-muted-sm" style={{ marginBottom: 12 }}>
+                  Create an ADO User Story assigning the LOB content lead to research, author, and publish the missing content.
+                </p>
+                <form className="rd-form" onSubmit={(e) => { e.preventDefault(); setAdoId(`AB#${rand(14000, 15999)}`); setAdoSuccess(true); }}>
+                  <div className="rd-form-field">
+                    <label>Title</label>
+                    <input type="text" value={adoTitle} onChange={e => setAdoTitle(e.target.value)} placeholder="e.g. [Content Gap] Azure – Networking: Private Endpoint" />
+                  </div>
+                  <div className="rd-form-field">
+                    <label>Assign To</label>
+                    <input type="text" value={adoAssignee} onChange={e => setAdoAssignee(e.target.value)} />
+                  </div>
+                  <div className="rd-form-row">
+                    <div className="rd-form-field">
+                      <label>Area Path</label>
+                      <input type="text" value={adoAreaPath} onChange={e => setAdoAreaPath(e.target.value)} />
+                    </div>
+                    <div className="rd-form-field">
+                      <label>Priority</label>
+                      <select value={adoPriority} onChange={e => setAdoPriority(e.target.value as '1'|'2'|'3'|'4')}>
+                        <option value="1">1 – Critical</option>
+                        <option value="2">2 – High</option>
+                        <option value="3">3 – Medium</option>
+                        <option value="4">4 – Low</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="rd-form-field">
+                    <label>Tags</label>
+                    <input type="text" value={adoTags} onChange={e => setAdoTags(e.target.value)} />
+                  </div>
+                  <button type="submit" className="rd-btn rd-btn--primary rd-btn--full">
+                    📋 Create ADO Item
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

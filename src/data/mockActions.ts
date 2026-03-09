@@ -226,5 +226,31 @@ export const actionItems: ActionItem[] = [
       ],
     },
   },
+  {
+    id: 'a10',
+    priority: 'High',
+    persona: 'Content Manager',
+    description: '27 queries had no knowledge to answer in the past 7 days — add missing content or assign to LOB leads to investigate.',
+    section: 'support-quality',
+    resolutionType: 'content-request',
+    detail: {
+      summary: '27 distinct questions returned zero results this week across Azure, M365, and Intune LOBs. These are real user queries the bot cannot answer — content does not exist in the knowledge base. Each gap should either be filled directly or assigned to the responsible LOB content lead for authoring.',
+      missingQueries: [
+        { question: 'How do I configure Azure Private Endpoint for a storage account?', lob: 'Azure', topic: 'Networking', frequency: 9 },
+        { question: 'What is the Microsoft 365 data retention policy for Teams messages?', lob: 'M365', topic: 'Compliance', frequency: 7 },
+        { question: 'How do I set up Intune App Protection Policies for Android?', lob: 'Intune', topic: 'Device Management', frequency: 6 },
+        { question: 'Can I move an Azure subscription between tenants?', lob: 'Azure', topic: 'Subscription Management', frequency: 5 },
+        { question: 'How do I configure MFA for guest users in M365?', lob: 'M365', topic: 'Identity & Access', frequency: 5 },
+        { question: 'What logs are available for Intune compliance failures?', lob: 'Intune', topic: 'Diagnostics', frequency: 4 },
+        { question: 'How do I restrict Azure VM access by IP address?', lob: 'Azure', topic: 'Security', frequency: 4 },
+        { question: 'Does Teams support breakout rooms for external users?', lob: 'M365', topic: 'Collaboration', frequency: 3 },
+      ],
+      contentRequestDefaults: {
+        assignedTo: 'LOB Content Lead',
+        areaPath: 'AAQ\\Content\\Gaps',
+        tags: 'content-gap, missing-knowledge, no-answer',
+      },
+    },
+  },
 ];
 

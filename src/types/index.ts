@@ -54,12 +54,19 @@ export interface IncidentRow {
 // ── Actionable Insights ─────────────────────────────────────────────────────
 export type PersonaTag = 'Content Manager' | 'Support Engineer' | 'LOB Leader' | 'Program Leader';
 export type Priority = 'High' | 'Medium' | 'Low';
-export type ResolutionType = 'content-fix' | 'ado-assignment' | 'bug-filing';
+export type ResolutionType = 'content-fix' | 'ado-assignment' | 'bug-filing' | 'content-request';
 
 export interface FailingPrompt {
   question: string;
   botAnswer: string;
   missingContent: string;
+}
+
+export interface MissingQuery {
+  question: string;
+  lob: string;
+  topic: string;
+  frequency: number; // times asked in the period
 }
 
 export interface ArticleItem {
@@ -100,6 +107,9 @@ export interface ActionDetail {
   bugDefaults?: Partial<BugFormData>;
   investigationContext?: string;
   incidentId?: string;
+  // content-request
+  missingQueries?: MissingQuery[];
+  contentRequestDefaults?: { assignedTo?: string; areaPath?: string; tags?: string };
 }
 
 export interface ActionItem {

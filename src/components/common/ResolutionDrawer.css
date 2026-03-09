@@ -654,3 +654,39 @@
 
 /* ── Wrap action row ──────────────────────────────────────────────────────── */
 .rd-action-row--wrap { flex-wrap: wrap; }
+
+/* ── Content-request flow ─────────────────────────────────────────────────── */
+.rd-table-row--clickable {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.rd-table-row--clickable:hover {
+  background: #f0f6ff;
+}
+.rd-lob-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.rd-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 2px dashed var(--pbi-border);
+  border-radius: 6px;
+  padding: 18px 12px;
+  background: #fafafa;
+  color: var(--pbi-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.rd-upload-zone:hover {
+  border-color: #0078d4;
+  background: #f0f6ff;
+}
